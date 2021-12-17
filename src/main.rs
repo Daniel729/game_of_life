@@ -1,4 +1,4 @@
-use crossterm::{event, queue, terminal, cursor, execute, event::read};
+use crossterm::{cursor, event, event::read, execute, queue, terminal};
 use std::io::{stdout, Write};
 use std::sync::mpsc;
 use std::thread;
@@ -49,23 +49,17 @@ fn main() {
     thread::spawn(move || {
         read_events(tx);
     });
-    
     'main: loop {
-        loop {
-            match rx.try_recv() {
-                Ok(x) => match x {
-                    Event::Break() => {
-                        break 'main;
-                    }
-                    Event::Pause() => {
-                        paused = !paused;
-                    }
-                    Event::Click(x, y) => {
-                        table[x as usize][y as usize] = !table[x as usize][y as usize];
-                    }
-                },
-                Err(_) => {
-                    break;
+        while let Ok(x) = rx.try_recv() {
+            match x {
+                Event::Break() => {
+                    break 'main;
+                }
+                Event::Pause() => {
+                    paused = !paused;
+                }
+                Event::Click(x, y) => {
+                    table[x as usize][y as usize] = !table[x as usize][y as usize];
                 }
             }
         }
@@ -100,15 +94,13 @@ fn update_table(table: &mut Vec<Vec<bool>>) {
                 if let Some(x) = table.get(((x as i32) + dir.0) as usize) {
                     if let Some(flag) = x.get(((y as i32) + dir.1) as usize) {
                         if *flag {
-                                live_cells += 1;
+                            live_cells += 1;
                         }
                     }
                 }
             }
 
-            if (live_cells == 2 || live_cells == 3) && table[x][y] {
-                place_holder[x][y] = true;
-            } else if live_cells == 3 && !table[x][y] {
+            if live_cells == 3 || (live_cells == 2 && table[x][y]) {
                 place_holder[x][y] = true;
             } else {
                 place_holder[x][y] = false;
